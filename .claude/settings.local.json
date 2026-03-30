@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"e:/game/ASTLIBRA/ASTLIBRA/astlibra_mod_tool/frontend/api.py\":*)",
+      "Bash(\"e:/game/ASTLIBRA/ASTLIBRA/astlibra_mod_tool/web/css/style.css\":*)",
+      "Bash(sort echo:*)",
+      "Bash(python -c \":*)",
+      "Bash(pip show:*)",
+      "Bash(python -c \"import webview; print\\(''pywebview version:'', webview.__version__\\)\")",
+      "Bash(grep -E \"^d|\\\\.py$\")",
+      "Bash(git rm:*)",
+      "Bash(find . -type f -not -path ./.git/* -not -path ./.venv/* -not -path ./.claude/* -not -path */__pycache__/*)",
+      "Bash(grep -E \"\\\\.\\(py|html|js|css|json|md|txt\\)$\")",
+      "Bash(wc -l web/js/*.js web/js/pages/*.js)",
+      "Bash(curl -o \"e:/game/ASTLIBRA/ASTLIBRA/astlibra_mod_tool/web/js/vue.global.prod.js\" \"https://unpkg.com/vue@3/dist/vue.global.prod.js\")",
+      "Bash(curl -L -o \"e:/game/ASTLIBRA/ASTLIBRA/astlibra_mod_tool/web/js/vue.global.prod.js\" \"https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js\")",
+      "Bash(grep -v \"\\\\.bat$\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import sys, json; data = json.load\\(sys.stdin\\); print\\(f''''MOD Name: {data[\"\"name\"\"]}''''\\); print\\(f''''Files: {len\\(data[\"\"files\"\"]\\)}''''\\)\")",
+      "Bash(python3 -m json.tool \"e:/game/ASTLIBRA/ASTLIBRA/MODS/saber/mod_info.json\")",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(find . -name \"*.png\" -type f -delete)"
+    ]
+  }
+}

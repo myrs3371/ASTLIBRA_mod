@@ -26,11 +26,8 @@ class Config:
         else:
             current_dir = cls.PROJECT_ROOT
 
-        parent_dir = os.path.dirname(current_dir)
-
-        if cls._check_game_files(parent_dir):
-            return parent_dir
-
+        if cls._check_game_files(current_dir):
+            return current_dir
         return None
 
     @classmethod
@@ -74,3 +71,9 @@ class Config:
     def get_patch_exe_script(cls):
         """获取patch_exe.py脚本路径"""
         return os.path.join(cls.CORE_DIR, 'patch_exe.py')
+
+    @classmethod
+    def get_mods_dir(cls, game_path):
+        """获取MODS目录"""
+        return os.path.join(game_path, 'MODS')
+

@@ -5,19 +5,33 @@
 ## 功能特性
 
 - 🎮 **自动检测游戏目录** - 启动时自动查找游戏安装位置
-- 📝 **文本提取** - 从游戏文件中提取对话和界面文本
-- ✏️ **文本编辑** - 可视化编辑游戏文本内容
+- 📝 **文本提取** - 从游戏文件中提取对话和界面文本（支持 6 种语言，12000+ 条文本）
+- ✏️ **文本编辑** - 现代化 Web UI 编辑游戏文本，支持搜索、分类筛选、分页浏览
 - 📦 **文本导入** - 将修改后的文本重新打包到游戏中
-- 🖼️ **图像模型** - 管理游戏图像资源（画饼）
-- 🔧 **MOD 管理** - 管理和应用游戏 MOD（画饼）
+- 🔧 **MOD 管理** - 文件覆盖式 MOD 系统，支持图像、音频、字体等任意文件替换
 
 ## 系统要求
 
 - Windows 操作系统
-- Python 3.7 或更高版本
+- Python 3.11+ 或直接使用打包好的 exe 文件
 - ASTLIBRA 游戏本体
 
-## 安装步骤
+## 使用方法（两种方式）
+
+### 方式一：使用打包好的 exe（推荐）
+
+1. 下载 `ASTLIBRA_MOD_Tool.exe`
+2. 将 exe 文件放到游戏目录的子文件夹中：
+   ```
+   ASTLIBRA/
+   ├── ASTLIBRA.exe
+   ├── DATA/
+   └── tools/
+       └── ASTLIBRA_MOD_Tool.exe  ← 放在这里
+   ```
+3. 双击运行即可
+
+### 方式二：从源码运行
 
 1. 克隆或下载本项目到游戏目录的子文件夹中：
    ```
@@ -32,13 +46,10 @@
    pip install -r requirements.txt
    ```
 
-## 使用方法
-
-### 启动工具
-
-```bash
-python main.py
-```
+3. 启动工具：
+   ```bash
+   python main.py
+   ```
 
 ### 首次使用
 
@@ -54,44 +65,58 @@ python main.py
 ### 编辑文本
 
 1. 点击左侧导航栏的"对话文本"
-2. 在表格中找到要修改的文本
-3. 双击单元格进行编辑
-4. 点击"保存修改"按钮保存更改
-5. 点击"导入到游戏"将修改应用到游戏中
+2. 使用搜索框或分类筛选找到要修改的文本
+3. 双击表格行打开编辑对话框
+4. 修改文本后点击"保存"（自动保存到 CSV）
+5. 点击"应用到游戏"将所有修改打包到游戏中
+6. 重启游戏查看效果
+
+### 使用 MOD
+
+1. 点击左侧导航栏的"MOD 管理"
+2. 将 MOD 文件夹放到游戏目录的 `MODS/` 文件夹中
+3. 在列表中选择要激活的 MOD
+4. 点击"激活选中的 MOD"
+5. 重启游戏即可使用 MOD
+6. 点击"还原原版"可恢复所有原始文件
 
 ## 项目结构
 
 ```
 astlibra_mod_tool/
-├── main.py                 # 程序入口
-├── config.py              # 配置文件
-├── requirements.txt       # 依赖列表
-├── frontend/              # 前端界面
-│   ├── app.py            # 主应用
-│   ├── pages/            # 页面组件
-│   │   ├── home_page.py
-│   │   ├── dialogue_page.py
-│   │   ├── image_page.py
-│   │   └── mod_page.py
-│   └── components/       # UI 组件
-├── backend/              # 后端逻辑
-│   ├── services/         # 业务服务
-│   │   ├── game_manager.py
-│   │   ├── text_extractor.py
-│   │   └── text_importer.py
-│   └── utils/           # 工具函数
-└── core/                # 核心工具
-    ├── _ALOC.py         # ALOC 工具
-    ├── patch_exe.py     # EXE 修改工具
-    ├── text_classifier.py
-    └── read_csv.py
+├── main.py                    # 程序入口（pywebview 启动）
+├── config.py                  # 配置管理
+├── requirements.txt           # 依赖列表
+├── web/                       # Web 前端（Vue 3）
+│   ├── index.html            # 主页面
+│   ├── css/                  # 样式文件
+│   └── js/                   # JavaScript 组件
+│       ├── app.js           # 主应用
+│       └── pages/           # 页面组件
+│           ├── home.js      # 首页
+│           ├── dialogue.js  # 文本编辑
+│           └── mod.js       # MOD 管理
+├── frontend/                  # Python API 层
+│   └── api.py                # pywebview JS API 桥接
+├── backend/                   # 后端业务逻辑
+│   └── services/             # 业务服务
+│       ├── game_manager.py   # 游戏目录检测
+│       ├── text_extractor.py # 文本提取
+│       ├── text_importer.py  # 文本导入
+│       └── mod_manager.py    # MOD 管理
+└── core/                      # 核心工具
+    ├── _ALOC.py              # ALOC 格式处理
+    ├── patch_exe.py          # EXE 修补
+    ├── text_classifier.py    # 文本分类
+    └── read_csv.py           # CSV 读取
 ```
 
 ## 技术栈
 
-- **UI 框架**: Flet (基于 Flutter)
+- **UI 框架**: Vue 3 + pywebview（原生窗口 + Web UI）
+- **后端**: Python 3.11+
 - **数据处理**: Pandas
-- **图像处理**: Pillow
+- **打包工具**: PyInstaller
 
 ## 注意事项
 
@@ -112,13 +137,32 @@ A: 确保点击了"导入到游戏"按钮，并重启游戏。
 ### Q: 如何恢复原始游戏文件？
 A: 将 `DATA/DAT_BACK.dxa` 重命名为 `DAT.dxa` 即可恢复。
 
-## 开发计划
+## 开发相关
 
-- [ ] 完善图像资源管理功能
-- [ ] 实现 MOD 打包和分享功能
-- [ ] 添加文本搜索和过滤功能
-- [ ] 支持批量文本替换
-- [ ] 添加翻译辅助功能
+### 打包为 exe
+
+```bash
+# 方式一：使用打包脚本（Windows）
+build.bat
+
+# 方式二：手动打包
+pip install pyinstaller
+pyinstaller build.spec
+```
+
+打包后的文件位于 `dist/ASTLIBRA_MOD_Tool.exe`
+
+## 架构说明
+
+项目采用 **Python 后端 + Web 前端** 的混合架构：
+
+- **前端**: Vue 3 单页应用，提供现代化的用户界面
+- **桥接层**: pywebview 提供原生窗口和 Python-JavaScript 通信
+- **后端**: Python 处理游戏文件操作、文本提取/导入、MOD 管理
+
+数据流：`Web UI → JS API → Python API (api.py) → Backend Services → Core Tools`
+
+详细架构文档请查看 [CLAUDE.md](CLAUDE.md)
 
 ## 许可证
 
