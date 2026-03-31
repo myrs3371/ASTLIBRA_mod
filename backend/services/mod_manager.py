@@ -44,6 +44,24 @@ class ModManager:
                         mods.append(mod_info)
                 except Exception as e:
                     print(f"读取MOD信息失败 {item}: {e}")
+                    # 读取失败时使用文件夹名称
+                    mods.append({
+                        'name': item,
+                        'folder_name': item,
+                        'version': '未知',
+                        'author': '未知',
+                        'description': '',
+                    })
+            else:
+                # 没有mod_info.json时使用文件夹名称
+                mods.append({
+                    'name': item,
+                    'folder_name': item,
+                    'version': '未知',
+                    'author': '未知',
+                    'description': '',
+                    'files': []
+                })
 
         return mods
 
@@ -73,67 +91,103 @@ class ModManager:
         active_mods = self.get_active_mods()
         return any(mod['name'] == mod_name for mod in active_mods)
 
-    def activate_mod(self, mod_folder_name: str) -> Tuple[bool, str]:
-        """激活MOD - 将原游戏文件重命名为_BACK后缀，然后复制MOD文件"""
-        mod_path = os.path.join(self.mods_dir, mod_folder_name)
-        mod_info_path = os.path.join(mod_path, "mod_info.json")
+    def activate_mods(self, mod_folder_names: List[str]) -> Tuple[bool, str]:
+        """批量激活MOD - 支持同时激活多个MOD
 
-        # 读取MOD信息
-        if not os.path.exists(mod_info_path):
-            return False, f"MOD信息文件不存在: {mod_info_path}"
+        改进的激活机制：
+        1. 首次激活时，将原文件备份为 .original 后缀（永久保留）
+        2. 后续激活时，直接覆盖当前文件
+        3. 支持多个MOD同时激活
+        """
+        if not mod_folder_names:
+            return False, "未选择任何MOD"
+
+        total_files = 0
+        activated_mods = []
 
         try:
-            with open(mod_info_path, 'r', encoding='utf-8') as f:
-                mod_info = json.load(f)
-        except Exception as e:
-            return False, f"读取MOD信息失败: {e}"
+            for mod_folder_name in mod_folder_names:
+                mod_path = os.path.join(self.mods_dir, mod_folder_name)
 
-        # 检查是否已激活
-        if self.is_mod_active(mod_folder_name):
-            return False, "MOD已经激活"
-
-        # 复制文件并重命名原文件
-        activated_files = []
-        try:
-            for file_path in mod_info.get('files', []):
-                # MOD文件路径
-                mod_file = os.path.join(mod_path, file_path)
-                if not os.path.exists(mod_file):
-                    print(f"警告: MOD文件不存在 {mod_file}")
+                if not os.path.exists(mod_path):
+                    print(f"警告: MOD文件夹不存在 {mod_path}")
                     continue
 
-                # 游戏文件路径（移除DATA/前缀）
-                relative_path = file_path.replace('DATA/', '').replace('DATA\\', '')
-                game_file = os.path.join(self.game_path, relative_path)
+                # 读取MOD信息（如果有）
+                mod_info_path = os.path.join(mod_path, "mod_info.json")
+                mod_files = []
 
-                # 重命名原文件为_BACK后缀（如果存在且未重命名）
-                if os.path.exists(game_file):
-                    dir_name = os.path.dirname(game_file)
-                    base_name = os.path.basename(game_file)
-                    name_parts = os.path.splitext(base_name)
-                    backup_file = os.path.join(dir_name, name_parts[0] + '_BACK' + name_parts[1])
+                if os.path.exists(mod_info_path):
+                    try:
+                        with open(mod_info_path, 'r', encoding='utf-8') as f:
+                            mod_info = json.load(f)
+                            mod_files = mod_info.get('files', [])
+                    except Exception as e:
+                        print(f"读取MOD信息失败 {mod_folder_name}: {e}")
 
-                    if not os.path.exists(backup_file):
-                        os.rename(game_file, backup_file)
+                # 如果没有files信息，扫描MOD文件夹中的所有文件
+                if not mod_files:
+                    mod_files = self._scan_mod_files(mod_path)
 
-                # 复制MOD文件到游戏目录
-                os.makedirs(os.path.dirname(game_file), exist_ok=True)
-                shutil.copy2(mod_file, game_file)
-                activated_files.append(relative_path)
+                # 复制文件
+                activated_files = []
+                for file_path in mod_files:
+                    # MOD文件路径
+                    mod_file = os.path.join(mod_path, file_path)
+                    if not os.path.exists(mod_file):
+                        print(f"警告: MOD文件不存在 {mod_file}")
+                        continue
+
+                    # 游戏文件路径（移除DATA/前缀）
+                    relative_path = file_path.replace('DATA/', '').replace('DATA\\', '')
+                    game_file = os.path.join(self.game_path, relative_path)
+
+                    # 首次激活时创建 .original 备份
+                    original_backup = game_file + '.original'
+                    if os.path.exists(game_file) and not os.path.exists(original_backup):
+                        shutil.copy2(game_file, original_backup)
+
+                    # 复制MOD文件到游戏目录
+                    os.makedirs(os.path.dirname(game_file), exist_ok=True)
+                    shutil.copy2(mod_file, game_file)
+                    activated_files.append(relative_path)
+                    total_files += 1
+
+                if activated_files:
+                    activated_mods.append({
+                        'name': mod_folder_name,
+                        'activated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        'files': activated_files
+                    })
+
+            if not activated_mods:
+                return False, "没有找到可激活的MOD文件"
 
             # 记录到激活列表
             active_mods = self.get_active_mods()
-            active_mods.append({
-                'name': mod_folder_name,
-                'activated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'files': activated_files
-            })
+            active_mods.extend(activated_mods)
             self._save_active_mods(active_mods)
 
-            return True, f"成功激活MOD，共 {len(activated_files)} 个文件"
+            return True, f"成功激活 {len(activated_mods)} 个MOD，共 {total_files} 个文件"
 
         except Exception as e:
             return False, f"激活MOD失败: {e}"
+
+    def _scan_mod_files(self, mod_path: str) -> List[str]:
+        """扫描MOD文件夹中的所有文件，返回相对路径列表"""
+        files = []
+        for root, _, filenames in os.walk(mod_path):
+            for filename in filenames:
+                if filename == 'mod_info.json':
+                    continue
+                full_path = os.path.join(root, filename)
+                rel_path = os.path.relpath(full_path, mod_path)
+                files.append(rel_path.replace('\\', '/'))
+        return files
+
+    def activate_mod(self, mod_folder_name: str) -> Tuple[bool, str]:
+        """激活单个MOD（保留兼容性）"""
+        return self.activate_mods([mod_folder_name])
 
     def deactivate_mod(self, mod_folder_name: str) -> Tuple[bool, str]:
         """停用MOD - 根据CLAUDE.md规范，停用就是删除MOD"""

@@ -148,19 +148,22 @@ class Api:
             return []
         try:
             mods = self._mod_manager.scan_mods()
-            active_names = [m["name"] for m in self._mod_manager.get_active_mods()]
-            for mod in mods:
-                mod["is_active"] = mod.get("folder_name", "") in active_names
             return mods
         except Exception:
             return []
 
-    def activate_mod(self, folder_name):
-        """激活MOD - 将原游戏文件重命名为_BACK后缀，复制MOD文件"""
+    def activate_mods(self, folder_names):
+        """批量激活MOD - 激活勾选的多个MOD"""
         if not self._mod_manager:
             return {"ok": False, "msg": "MOD管理器未初始化"}
-        ok, msg = self._mod_manager.activate_mod(folder_name)
+        if not folder_names or len(folder_names) == 0:
+            return {"ok": False, "msg": "请选择要激活的MOD"}
+        ok, msg = self._mod_manager.activate_mods(folder_names)
         return {"ok": ok, "msg": msg}
+
+    def activate_mod(self, folder_name):
+        """激活单个MOD（保留兼容性）"""
+        return self.activate_mods([folder_name])
 
     def restore_all_mods(self):
         """还原原版 - 删除游戏文件夹并重新解压备份"""

@@ -5,6 +5,7 @@ const modPage = {
         return {
             mods: [],
             selectedMod: null,
+            checkedMods: [],
             confirm: { visible: false, title: '', message: '', okText: '', okColor: '', onOk: null },
         };
     },
@@ -19,11 +20,28 @@ const modPage = {
             if (!this.selectedMod && mods.length > 0) this.selectedMod = mods[0];
         },
         selectMod(mod) { this.selectedMod = mod; },
+        toggleCheck(mod) {
+            const idx = this.checkedMods.indexOf(mod.folder_name);
+            if (idx > -1) {
+                this.checkedMods.splice(idx, 1);
+            } else {
+                this.checkedMods.push(mod.folder_name);
+            }
+        },
+        isChecked(mod) {
+            return this.checkedMods.includes(mod.folder_name);
+        },
         async activateMod() {
-            if (!this.selectedMod) { this.showToast('请先选择一个 MOD', 'orange'); return; }
-            const r = await pywebview.api.activate_mod(this.selectedMod.folder_name);
+            if (this.checkedMods.length === 0) {
+                this.showToast('请先勾选要激活的 MOD', 'orange');
+                return;
+            }
+            const r = await pywebview.api.activate_mods(this.checkedMods);
             this.showToast(r.msg, r.ok ? 'green' : 'red');
-            if (r.ok) await this.fetchMods();
+            if (r.ok) {
+                this.checkedMods = [];
+                await this.fetchMods();
+            }
         },
         restoreAll() {
             this.showConfirm(
@@ -40,9 +58,7 @@ const modPage = {
         },
         deleteMod() {
             if (!this.selectedMod) return;
-            const warningMsg = this.selectedMod.is_active
-                ? `确定要删除 MOD "${this.selectedMod.name}" 吗？\n\n⚠️ 警告：此 MOD 已激活，删除后将无法恢复。\n建议先使用"还原原版"功能。`
-                : `确定要删除 MOD "${this.selectedMod.name}" 吗？`;
+            const warningMsg = `确定要删除 MOD "${this.selectedMod.name}" 吗？\n\n此操作不可撤销。`;
 
             this.showConfirm(
                 '确认删除',
@@ -76,10 +92,13 @@ const modPage = {
             <div class="mod-list">
                 <div v-if="mods.length === 0" class="empty-state">没有找到 MOD</div>
                 <div v-for="mod in mods" :key="mod.folder_name"
-                     class="mod-item" :class="{selected: selectedMod && selectedMod.folder_name === mod.folder_name}"
-                     @click="selectMod(mod)">
-                    <span class="mod-status-icon">{{ mod.is_active ? '✅' : '⭕' }}</span>
-                    <div class="mod-item-info">
+                     class="mod-item" :class="{selected: selectedMod && selectedMod.folder_name === mod.folder_name}">
+                    <input type="checkbox"
+                           :checked="isChecked(mod)"
+                           @change="toggleCheck(mod)"
+                           @click.stop
+                           style="margin-right: 8px; cursor: pointer;">
+                    <div class="mod-item-info" @click="selectMod(mod)" style="flex: 1; cursor: pointer;">
                         <div class="mod-item-name">{{ mod.name }}</div>
                         <div class="mod-item-desc" v-if="mod.description">
                             {{ mod.description.length > 40 ? mod.description.slice(0,40) + '…' : mod.description }}
@@ -88,7 +107,9 @@ const modPage = {
                 </div>
             </div>
             <div class="mod-actions">
-                <button class="btn btn-primary btn-block" @click="activateMod">▶ 激活选中的 MOD</button>
+                <button class="btn btn-primary btn-block" @click="activateMod">
+                    ▶ 激活勾选的 MOD ({{ checkedMods.length }})
+                </button>
                 <button class="btn btn-secondary btn-block" @click="restoreAll">↺ 还原原版</button>
             </div>
         </div>
@@ -99,18 +120,10 @@ const modPage = {
                 <hr>
                 <div class="mod-name-row">
                     <span class="mod-detail-name">{{ selectedMod.name }}</span>
-                    <span class="badge" :class="selectedMod.is_active ? 'badge-active' : 'badge-inactive'">
-                        {{ selectedMod.is_active ? '已激活' : '未激活' }}
-                    </span>
                 </div>
-                <p class="mod-desc">{{ selectedMod.description }}</p>
-                <p class="mod-meta">作者: {{ selectedMod.author || '未知' }} &nbsp;&nbsp; 版本: {{ selectedMod.version || '1.0' }}</p>
+                <p class="mod-desc">{{ selectedMod.description || '暂无描述' }}</p>
+                <p class="mod-meta">作者: {{ selectedMod.author || '未知' }} &nbsp;&nbsp; 版本: {{ selectedMod.version || '未知' }}</p>
                 <hr>
-                <strong style="font-size:13px">包含文件:</strong>
-                <ul class="file-list">
-                    <li v-for="f in (selectedMod.files || [])" :key="f">{{ f }}</li>
-                    <li v-if="!(selectedMod.files && selectedMod.files.length)" style="color:#8b949e">（无文件）</li>
-                </ul>
                 <button class="btn btn-danger" @click="deleteMod" style="margin-top:16px">🗑 删除此 MOD</button>
             </div>
         </div>
