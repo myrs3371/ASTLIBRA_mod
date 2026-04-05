@@ -18,6 +18,12 @@ class Config:
     # ASTLIBRA_DEC工具路径
     ASTLIBRA_DEC = os.path.join(CORE_DIR, 'ASTLIBRA_Dec.exe')
 
+    # ASTLIBRA解压文件夹列表
+    DATA_LIST = ['Image', 'Image2K', 'Image4K', 'Image720p', 'Sound', 'DAT']
+    # ASTLIBRA游戏备份
+    DATA_BACK_LIST = ['Image_BACK.dxa', 'Image2K_BACK.dxa', 'Image4K_BACK.dxa', 'Image720p_BACK.dxa', 'Sound_BACK.dxa', 'DAT_BACK.dxa']
+    # ASTLIBRA游戏文件
+    DATA_GAME_LIST = ['Image.dxa', 'Image2K.dxa', 'Image4K.dxa', 'Image720p.dxa', 'Sound.dxa', 'DAT.dxa']
     @classmethod
     def get_game_path(cls):
         """查找游戏目录"""

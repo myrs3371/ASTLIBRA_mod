@@ -20,7 +20,24 @@
       "Bash(python3 -m json.tool \"e:/game/ASTLIBRA/ASTLIBRA/MODS/saber/mod_info.json\")",
       "Bash(python3:*)",
       "Bash(python:*)",
-      "Bash(find . -name \"*.png\" -type f -delete)"
+      "Bash(find . -name \"*.png\" -type f -delete)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Read(//c/Users/lenovo/.claude/**)",
+      "Bash(claude plugin:*)",
+      "Read(//c/Users/lenovo/**)",
+      "Bash(claude skills:*)",
+      "Bash(gh pr:*)",
+      "WebFetch(domain:mp.weixin.qq.com)",
+      "Bash(claude help:*)",
+      "Bash(cp:*)",
+      "Bash(cp -r /tmp/sanyuan-skills/skills/sigma 'C:\\\\Users\\\\lenovo\\\\.claude\\\\skills\\\\')",
+      "Bash(cp -r /tmp/sanyuan-skills/skills/skill-forge 'C:\\\\Users\\\\lenovo\\\\.claude\\\\skills\\\\')"
+    ],
+    "additionalDirectories": [
+      "e:\\game\\ASTLIBRA\\ASTLIBRA\\astlibra_mod_tool",
+      "C:\\Users\\lenovo\\.claude"
     ]
   }
 }

@@ -3,14 +3,17 @@ const modPage = {
     props: ['showToast'],
     data() {
         return {
-            mods: [],
-            selectedMod: null,
+            mods: [], //mod列表
+            selectedMod: null, //当前选中展示的mod
             checkedMods: [],
             confirm: { visible: false, title: '', message: '', okText: '', okColor: '', onOk: null },
         };
     },
     mounted() { this.fetchMods(); },
     methods: {
+        /**从python拿到mod列表
+         * 如果没有选择的mod，则默认选择第一个
+         */
         async fetchMods() {
             const mods = await pywebview.api.get_mods();
             this.mods = mods;
@@ -19,7 +22,9 @@ const modPage = {
             }
             if (!this.selectedMod && mods.length > 0) this.selectedMod = mods[0];
         },
+        /** 选中某个mod，展示mod详情 **/
         selectMod(mod) { this.selectedMod = mod; },
+        /** 勾选/取消勾选mod**/
         toggleCheck(mod) {
             const idx = this.checkedMods.indexOf(mod.folder_name);
             if (idx > -1) {
@@ -28,6 +33,7 @@ const modPage = {
                 this.checkedMods.push(mod.folder_name);
             }
         },
+        /**判断是否已勾选**/
         isChecked(mod) {
             return this.checkedMods.includes(mod.folder_name);
         },

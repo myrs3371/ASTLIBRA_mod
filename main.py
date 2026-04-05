@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import webview
 import tkinter as tk 
 from frontend.api import Api

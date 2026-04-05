@@ -17,10 +17,3 @@ class GameManager:
             self.data_dir = Config.get_data_dir(self.game_path)
             return True
         return False
-
-    def has_backup(self):
-        """检查备份是否存在"""
-        if not self.data_dir:
-            return False
-        backup_file = Config.get_dat_backup_file(self.game_path)
-        return os.path.exists(backup_file)

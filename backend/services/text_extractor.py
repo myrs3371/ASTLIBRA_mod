@@ -183,27 +183,3 @@ class TextExtractor:
             if os.path.exists(dat_temp):
                 os.remove(dat_temp)
             return False, f"打包失败: {str(e)}"
-
-    def extract_all(self) -> Tuple[bool, str]:
-        """完整提取流程"""
-        success, message = self.check_files()
-        if not success:
-            return False, message
-
-        success, message = self.unpack_dat_dxa()
-        if not success:
-            return False, message
-
-        success, message = self.patch_exe()
-        if not success:
-            return False, message
-
-        success, message = self.extract_texts()
-        if not success:
-            return False, message
-
-        success, message = self.pack_to_dat()
-        if not success:
-            return False, message
-
-        return True, "提取完成"

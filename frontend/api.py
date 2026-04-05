@@ -161,9 +161,6 @@ class Api:
         ok, msg = self._mod_manager.activate_mods(folder_names)
         return {"ok": ok, "msg": msg}
 
-    def activate_mod(self, folder_name):
-        """激活单个MOD（保留兼容性）"""
-        return self.activate_mods([folder_name])
 
     def restore_all_mods(self):
         """还原原版 - 删除游戏文件夹并重新解压备份"""
