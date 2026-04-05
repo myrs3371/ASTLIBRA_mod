@@ -18,6 +18,9 @@ class Api:
         self._extraction_status = {
             "step": "", "done": False, "success": False, "error": None
         }
+        self._mod_status = {
+            "step": "", "done": False, "success": False, "error": None
+        }
         if self._game_manager.find_game_directory():
             self._mod_manager = ModManager(self._game_manager.game_path)
 
@@ -153,13 +156,29 @@ class Api:
             return []
 
     def activate_mods(self, folder_names):
-        """批量激活MOD - 激活勾选的多个MOD"""
+        """批量激活MOD - 后台线程执行，前端轮询 get_mod_status() 获取进度"""
         if not self._mod_manager:
             return {"ok": False, "msg": "MOD管理器未初始化"}
         if not folder_names or len(folder_names) == 0:
             return {"ok": False, "msg": "请选择要激活的MOD"}
-        ok, msg = self._mod_manager.activate_mods(folder_names)
-        return {"ok": ok, "msg": msg}
+        self._mod_status = {"step": "正在准备...", "done": False, "success": False, "error": None}
+        threading.Thread(target=self._do_activate_mods, args=(folder_names,), daemon=True).start()
+        return {"ok": True, "msg": "started"}
+
+    def _do_activate_mods(self, folder_names):
+        def on_step(step: str):
+            self._mod_status["step"] = step
+
+        ok, msg = self._mod_manager.activate_mods(folder_names, status_callback=on_step)
+        self._mod_status = {
+            "step": "完成" if ok else self._mod_status["step"],
+            "done": True,
+            "success": ok,
+            "error": None if ok else msg,
+        }
+
+    def get_mod_status(self):
+        return dict(self._mod_status)
 
 
     def restore_all_mods(self):

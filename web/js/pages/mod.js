@@ -7,6 +7,9 @@ const modPage = {
             selectedMod: null, //当前选中展示的mod
             checkedMods: [],
             confirm: { visible: false, title: '', message: '', okText: '', okColor: '', onOk: null },
+            // MOD 激活进度
+            modProgress: { visible: false, step: '', success: false, error: null },
+            _pollTimer: null,
         };
     },
     mounted() { this.fetchMods(); },
@@ -42,12 +45,38 @@ const modPage = {
                 this.showToast('请先勾选要激活的 MOD', 'orange');
                 return;
             }
+            // 显示进度遮罩
+            this.modProgress = { visible: true, step: '正在准备...', success: false, error: null };
             const r = await pywebview.api.activate_mods(this.checkedMods);
-            this.showToast(r.msg, r.ok ? 'green' : 'red');
-            if (r.ok) {
-                this.checkedMods = [];
-                await this.fetchMods();
+            if (!r.ok && r.msg !== 'started') {
+                // 启动失败（如未初始化）
+                this.modProgress.step = r.msg;
+                this.modProgress.error = r.msg;
+                return;
             }
+            // 启动成功，开始轮询
+            this._pollTimer = setInterval(async () => {
+                const s = await pywebview.api.get_mod_status();
+                this.modProgress.step = s.step;
+                if (s.done) {
+                    clearInterval(this._pollTimer);
+                    this._pollTimer = null;
+                    this.modProgress.success = s.success;
+                    this.modProgress.error = s.error;
+                    if (s.success) {
+                        this.checkedMods = [];
+                        await this.fetchMods();
+                    }
+                }
+            }, 400);
+        },
+        closeModProgress() {
+            if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+            const ok = this.modProgress.success;
+            const err = this.modProgress.error;
+            this.modProgress = { visible: false, step: '', success: false, error: null };
+            if (ok) this.showToast('MOD 激活成功！', 'green');
+            else if (err) this.showToast(err, 'red');
         },
         restoreAll() {
             this.showConfirm(
@@ -134,6 +163,32 @@ const modPage = {
             </div>
         </div>
     </div>
+
+    <!-- MOD 激活进度遮罩 -->
+    <div v-if="modProgress.visible" class="modal-overlay">
+        <div class="modal modal-sm">
+            <div class="modal-header"><h3>正在激活 MOD</h3></div>
+            <div class="modal-body" style="text-align:center; padding: 24px 16px;">
+                <!-- 进行中：旋转图标 -->
+                <div v-if="!modProgress.success && !modProgress.error"
+                     style="font-size:32px; margin-bottom:12px; animation: spin 1s linear infinite; display:inline-block;">⚙</div>
+                <!-- 成功 -->
+                <div v-if="modProgress.success"
+                     style="font-size:36px; margin-bottom:12px; color:#4caf50;">✔</div>
+                <!-- 失败 -->
+                <div v-if="modProgress.error"
+                     style="font-size:36px; margin-bottom:12px; color:#e53935;">✖</div>
+
+                <p style="font-size:14px; color:#ccc; margin:0;">{{ modProgress.step }}</p>
+                <p v-if="modProgress.error" style="font-size:13px; color:#ef9a9a; margin-top:8px;">{{ modProgress.error }}</p>
+            </div>
+            <div class="modal-footer" v-if="modProgress.success || modProgress.error">
+                <button class="btn btn-primary" @click="closeModProgress">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
     <div v-if="confirm.visible" class="modal-overlay">
         <div class="modal modal-sm">
             <div class="modal-header"><h3>{{ confirm.title }}</h3></div>

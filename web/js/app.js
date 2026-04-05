@@ -40,7 +40,7 @@ const rootApp = createApp({
                 }
             } catch (e) { console.error('Startup error:', e); }
         },
-        async startExtraction() {
+        async startExtraction(onSuccess) {
             this.extracting = true;
             this.extractionError = null;
             const result = await pywebview.api.start_extraction();
@@ -57,6 +57,7 @@ const rootApp = createApp({
                     this.extracting = false;
                     if (status.success) {
                         this.showToast('文本提取成功！', 'green');
+                        if (onSuccess) onSuccess();
                     } else {
                         this.extractionError = status.error || '提取失败';
                     }
@@ -103,7 +104,7 @@ const rootApp = createApp({
             </nav>
         </aside>
         <main class="main-content">
-            <component :is="currentComponent" :show-toast="showToast"></component>
+            <component :is="currentComponent" :show-toast="showToast" :start-extraction="startExtraction"></component>
         </main>
     </div>
     <div v-if="toast.visible" class="toast" :class="'toast-' + toast.type">

@@ -1,6 +1,6 @@
 const dialoguePage = {
     name: 'DialoguePage',
-    props: ['showToast'],
+    props: ['showToast', 'startExtraction'],
     data() {
         return {
             items: [],
@@ -29,6 +29,11 @@ const dialoguePage = {
         onKeyDown(e) {
             if (e.key === 'Escape' && this.editRow && !this.confirm.visible) {
                 this.closeEditDialog();
+            }
+        },
+        triggerExtraction() {
+            if (this.startExtraction) {
+                this.startExtraction(() => { this.fetchTexts(); });
             }
         },
         async fetchTexts() {
@@ -101,7 +106,8 @@ const dialoguePage = {
 <div class="page dialogue-page">
     <div v-if="noData && !loading" class="empty-state-center">
         <h2>⚠ 暂无数据</h2>
-        <p>请先提取游戏文本（首次启动自动进行）</p>
+        <p style="margin-bottom:16px">游戏文本尚未提取，点击下方按钮开始</p>
+        <button class="btn btn-primary" @click="triggerExtraction">▶ 开始提取文本</button>
     </div>
     <template v-else>
         <div class="toolbar">

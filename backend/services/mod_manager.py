@@ -5,6 +5,7 @@ import shutil
 import subprocess
 from typing import List, Dict, Tuple, Optional
 from config import Config
+from core.patch_exe import patch_exe
 
 
 class ModManager:
@@ -90,28 +91,52 @@ class ModManager:
         active_mods = self.get_active_mods()
         return any(mod['name'] == mod_name for mod in active_mods)
 
-    def activate_mods(self, mod_folder_names: List[str]) -> Tuple[bool, str]:
+    def activate_mods(self, mod_folder_names: List[str],
+                      status_callback=None) -> Tuple[bool, str]:
         """批量激活MOD - 支持同时激活多个MOD
 
         MOD文件夹结构: MODS/MyMod/Image/xxx.png, MODS/MyMod/Sound/xxx.ogg 等
         激活时将MOD中的数据文件夹(Image, Sound, DAT等)复制到游戏目录
+
+        status_callback(step: str) 可选，每个阶段开始时调用以上报进度
         """
+        def report(step: str):
+            print(step)
+            if status_callback:
+                status_callback(step)
+
         if not mod_folder_names:
             return False, "未选择任何MOD"
         try:
-            # 如果备份的游戏文件存在就把改为原版文件
+            # ── 1. 检测/修补游戏 EXE ────────────────────────────────────────
+            report("正在检测游戏 EXE...")
+            exe_path = Config.get_exe_file(self.game_path)
+            patched_bytes = bytes([0x90, 0x90, 0x90, 0x8B, 0x41, 0xFC, 0xC1, 0xC8, 0x04, 0x90, 0x90, 0x90])
+            with open(exe_path, 'rb') as f:
+                exe_data = f.read()
+            if patched_bytes not in exe_data:
+                report("正在修补游戏 EXE...")
+                patch_exe(exe_path)
+            else:
+                print("游戏EXE已修补，跳过")
+
+            # ── 2. 把备份文件改回原版文件名 ──────────────────────────────────
+            report("正在还原游戏备份文件...")
             for backup_file in Config.DATA_BACK_LIST:
                 backup_path = os.path.join(self.data_dir, backup_file)
-                print(backup_path)
                 if os.path.isfile(backup_path):
                     original_name = Config.DATA_GAME_LIST[Config.DATA_BACK_LIST.index(backup_file)]
                     original_path = os.path.join(self.data_dir, original_name)
                     os.rename(backup_path, original_path)
-            # 递归删除游戏目录下的文件
+
+            # ── 3. 删除已解压的游戏数据文件夹 ────────────────────────────────
+            report("正在清理旧版游戏数据...")
             for mod_dir in Config.DATA_LIST:
                 if os.path.isdir(os.path.join(self.data_dir, mod_dir)):
                     shutil.rmtree(os.path.join(self.data_dir, mod_dir))
-            # 重新解压游戏文件
+
+            # ── 4. 重新解压游戏原版 dxa 文件 ──────────────────────────────────
+            report("正在解压原版游戏数据，请稍候...")
             for data_name in Config.DATA_GAME_LIST:
                 dxa_file = os.path.join(self.data_dir, data_name)
                 if os.path.exists(dxa_file):
@@ -125,31 +150,78 @@ class ModManager:
                         )
                     except Exception as e:
                         print(f"警告: 解压 {data_name} 失败: {e}")
+
+            # ── 5. 复制 MOD 文件 ──────────────────────────────────────────────
             activated_count = 0
             for mod_folder_name in mod_folder_names:
+                report(f"正在应用 MOD：{mod_folder_name}...")
                 mod_path = os.path.join(self.mods_dir, mod_folder_name)
                 if not os.path.exists(mod_path):
                     print(f"警告: MOD文件夹不存在 {mod_path}")
                     continue
-                # 遍历MOD文件夹中的所有数据子文件夹(Image, Sound, DAT等)
                 for data_folder in Config.DATA_LIST:
                     mod_data_path = os.path.join(mod_path, data_folder)
                     if os.path.exists(mod_data_path):
                         game_data_path = os.path.join(self.data_dir, data_folder)
                         shutil.copytree(mod_data_path, game_data_path, dirs_exist_ok=True)
                 activated_count += 1
+
+            # ── 6. 把原版 dxa 文件改回备份文件名 ─────────────────────────────
+            report("正在重命名游戏文件为备份...")
             for file in Config.DATA_GAME_LIST:
                 game_path = os.path.join(self.data_dir, file)
                 if os.path.isfile(game_path):
                     back_name = Config.DATA_BACK_LIST[Config.DATA_GAME_LIST.index(file)]
                     back_path = os.path.join(self.data_dir, back_name)
                     os.rename(game_path, back_path)
+
+            # ── 7. 重新打包 LOCALIZE_.DAT ────────────────────────────────────
+            report("正在处理文本数据...")
+            dat_folder = Config.get_dat_folder(self.game_path)
+            aloc_tool = os.path.join(Config.CORE_DIR, '_ALOC.py')
+            localize_dec = os.path.join(Config.CORE_DIR, 'LOCALIZE_.DAT_dec')
+
+            # 检查是否有 MOD 提供了 DAT 文件夹（含文本替换）
+            mod_has_dat = any(
+                os.path.exists(os.path.join(self.mods_dir, name, 'DAT'))
+                for name in mod_folder_names
+            )
+
+            if mod_has_dat:
+                # MOD 自带 LOCALIZE_.DAT，已在第5步复制完毕，无需重新打包
+                print("MOD 包含 DAT 文本文件，跳过重新打包")
+            else:
+                # 无文本 MOD：从 LOCALIZE_.DAT_dec 模板提取原版文本再打包
+                # 确保 DAT 文件夹中始终有结构正确的 LOCALIZE_.DAT
+                csv_temp = os.path.join(dat_folder, '_temp_localize.csv')
+                try:
+                    subprocess.run(
+                        ['python', aloc_tool, localize_dec, csv_temp, '-e'],
+                        cwd=dat_folder,
+                        capture_output=True,
+                        timeout=60,
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                    subprocess.run(
+                        ['python', aloc_tool, localize_dec, csv_temp, '-p'],
+                        cwd=dat_folder,
+                        capture_output=True,
+                        timeout=60,
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                    print("LOCALIZE_.DAT 重新打包成功")
+                except Exception as e:
+                    print(f"警告: 重新打包 LOCALIZE_.DAT 失败: {e}")
+                finally:
+                    if os.path.exists(csv_temp):
+                        os.remove(csv_temp)
+
             return True, f"成功激活 {activated_count} 个MOD"
         except Exception as e:
             return False, f"激活MOD失败: {e}"
 
     def restore_all(self) -> Tuple[bool, str]:
-        """还原所有原版文件 - 删除游戏文件夹并重新解压备份文件"""
+        """还原所有原版文件 - 删除游戏文件夹并备份文件改名为原文件"""
         try:
             folders_to_delete = Config.DATA_LIST
 
@@ -160,38 +232,18 @@ class ModManager:
                     shutil.rmtree(folder_path)
                     deleted_folders.append(folder_name)
 
-            # 检查是否存在 DAT_BACK.dxa 备份文件
-            dat_backup = Config.get_dat_backup_file(self.game_path)
-            if not os.path.exists(dat_backup):
-                return False, "未找到备份文件 DAT_BACK.dxa，无法还原"
-
-            # 使用 ASTLIBRA_Dec.exe 重新解压 DAT_BACK.dxa
-            try:
-                result = subprocess.run(
-                    [Config.ASTLIBRA_DEC, dat_backup],
-                    cwd=self.data_dir,
-                    capture_output=True,
-                    text=True,
-                    timeout=300  # 5分钟超时
-                )
-
-                if result.returncode != 0:
-                    return False, f"解压备份文件失败: {result.stderr or '未知错误'}"
-
-                # 检查是否生成了 DAT 文件夹
-                dat_folder = Config.get_dat_folder(self.game_path)
-                if not os.path.exists(dat_folder):
-                    return False, "解压后未找到 DAT 文件夹"
-
-            except subprocess.TimeoutExpired:
-                return False, "解压备份文件超时（超过5分钟）"
-            except Exception as e:
-                return False, f"解压备份文件失败: {e}"
+            # 把备份的游戏文件改为原版文件
+            for backup_file in Config.DATA_BACK_LIST:
+                backup_path = os.path.join(self.data_dir, backup_file)
+                if os.path.isfile(backup_path):
+                    original_name = Config.DATA_GAME_LIST[Config.DATA_BACK_LIST.index(backup_file)]
+                    original_path = os.path.join(self.data_dir, original_name)
+                    os.rename(backup_path, original_path)
 
             # 清空激活列表
             self._save_active_mods([])
 
-            return True, f"成功还原原版，已删除 {', '.join(deleted_folders)} 并重新解压"
+            return True, f"成功还原原版，已删除 {', '.join(deleted_folders)} 并恢复原版文件"
 
         except Exception as e:
             return False, f"还原失败: {e}"
