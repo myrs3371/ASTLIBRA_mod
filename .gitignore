@@ -42,3 +42,7 @@ Thumbs.db
 DAT_BACK.dxa
 _extracted_texts.csv
 MODS/
+
+# Claude Code
+.claude/
+代码审查报告.md
