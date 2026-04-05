@@ -1,6 +1,29 @@
 const homePage = {
     name: 'HomePage',
     props: ['showToast'],
+    data() {
+        return {
+            confirm: { visible: false, onOk: null },
+            restoring: false,
+        };
+    },
+    methods: {
+        askRestore() {
+            this.confirm = { visible: true, onOk: this.doRestore };
+        },
+        async doRestore() {
+            this.confirm.visible = false;
+            this.restoring = true;
+            try {
+                const r = await pywebview.api.restore_all_files();
+                this.showToast(r.msg, r.ok ? 'green' : 'red');
+            } catch (e) {
+                this.showToast('还原失败: ' + e, 'red');
+            } finally {
+                this.restoring = false;
+            }
+        },
+    },
     template: `
 <div class="page home-page">
     <div class="home-container">
@@ -40,7 +63,7 @@ const homePage = {
             <div class="quick-start-steps">
                 <div class="step-item">
                     <div class="step-number">1</div>
-                    <span class="step-desc">首次使用时，工具会自动从 DAT.dxa 提取游戏文本数据</span>
+                    <span class="step-desc">在「对话文本」页点击「开始提取文本」，从 DAT.dxa 提取游戏文本数据</span>
                 </div>
                 <div class="step-item">
                     <div class="step-number">2</div>
@@ -48,11 +71,43 @@ const homePage = {
                 </div>
                 <div class="step-item">
                     <div class="step-number">3</div>
-                    <span class="step-desc">将 MOD 文件夹放入 MODS 目录，在「MOD 管理」页面勾选并激活，还可随时一键还原原版文件</span>
+                    <span class="step-desc">将 MOD 文件夹放入 MODS 目录，在「MOD 管理」页面勾选并激活</span>
                 </div>
             </div>
         </div>
 
+        <!-- 一键还原 -->
+        <div class="restore-zone">
+            <button class="btn btn-danger" :disabled="restoring" @click="askRestore">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 .49-3.17"/>
+                </svg>
+                {{ restoring ? '还原中...' : '一键还原游戏文件' }}
+            </button>
+            <p class="restore-hint">还原 EXE 原版 + 删除 MOD 覆盖的游戏数据文件夹，恢复备份文件名</p>
+        </div>
+
+    </div>
+
+    <!-- 确认对话框 -->
+    <div v-if="confirm.visible" class="modal-overlay" @click.self="confirm.visible = false">
+        <div class="modal modal-sm">
+            <div class="modal-header"><h3>确认还原</h3></div>
+            <div class="modal-body">
+                <p style="line-height:1.7">
+                    此操作将：<br>
+                    · 用 <code>ASTLIBRA_back.exe</code> 覆盖当前 EXE<br>
+                    · 删除游戏数据文件夹（DAT / Image / Sound 等）<br>
+                    · 将备份 dxa 文件恢复为原版文件名<br><br>
+                    <span style="color:var(--danger)">已激活的 MOD 效果将全部消失，不可撤销。</span>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" @click="confirm.onOk && confirm.onOk()">确认还原</button>
+                <button class="btn btn-secondary" @click="confirm.visible = false">取消</button>
+            </div>
+        </div>
     </div>
 </div>
     `,

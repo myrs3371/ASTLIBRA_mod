@@ -44,25 +44,30 @@ Native window (pywebview) + Web UI (Vue 3) + Python backend
 
 ### Key Directory Structure
 ```
-astlibra_mod_tool/
-├── main.py                    # Entry point - creates pywebview window
-├── config.py                  # Path management and game directory detection
-├── web/                       # Vue 3 frontend
+ASTLIBRA_MOD_TOOL.spec    # PyInstaller build config
+main.py                   # Entry point - creates pywebview window
+config.py                 # Path management and game directory detection
+requirements.txt          # Python dependencies
+web/                      # Vue 3 frontend (served via pywebview)
 │   ├── index.html
+│   ├── css/style.css
 │   └── js/
-│       ├── app.js            # Vue app initialization and routing
-│       └── pages/            # Page components (home, dialogue, mod)
-├── frontend/api.py            # pywebview JS API bridge
-├── backend/services/          # Business logic
-│   ├── game_manager.py       # Game directory detection
-│   ├── text_extractor.py     # Text extraction pipeline
-│   ├── text_importer.py      # Text import pipeline
-│   └── mod_manager.py        # MOD activation/deactivation
-└── core/                      # Binary processing tools
-    ├── _ALOC.py              # ALOC format packer/unpacker
-    ├── patch_exe.py          # Game EXE patcher
-    ├── text_classifier.py    # Text classification
-    └── ASTLIBRA_Dec.exe      # DAT.dxa unpacker
+│       ├── app.js       # Vue app initialization and routing
+│       └── pages/      # Page components as .js files
+│           ├── home.js
+│           ├── dialogue.js
+│           └── mod.js
+frontend/api.py           # pywebview JS API bridge (Api class)
+backend/services/         # Business logic
+│   ├── game_manager.py  # Game directory detection
+│   ├── text_extractor.py # 5-step extraction pipeline
+│   ├── text_importer.py # Text import pipeline
+│   └── mod_manager.py   # MOD activation/restore
+core/                     # Binary processing tools
+│   ├── _ALOC.py         # ALOC format packer/unpacker (-e export, -p pack)
+│   ├── patch_exe.py     # Game EXE patcher
+│   ├── text_classifier.py
+│   └── ASTLIBRA_Dec.exe # DAT.dxa unpacker
 ```
 
 ## Key Workflows
@@ -155,7 +160,7 @@ DAT.dxa (binary)
 - [backend/services/text_extractor.py](backend/services/text_extractor.py) - 5-step extraction pipeline
 - [backend/services/text_importer.py](backend/services/text_importer.py) - Text import/revert logic
 - [backend/services/mod_manager.py](backend/services/mod_manager.py) - MOD activation/restore logic
-- [ASTLIBRA_MOD_TOOL.spec](ASTLIBRA_MOD_TOOL.spec) - PyInstaller build configuration
+- [ASTLIBRA_MOD_TOOL.spec](ASTLIBRA_MOD_TOOL.spec) - PyInstaller build configuration (root level, not inside a subdirectory)
 
 ## Development Notes
 

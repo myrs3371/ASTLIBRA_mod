@@ -39,12 +39,7 @@ const rootApp = createApp({
         async startup() {
             try {
                 const info = await pywebview.api.get_game_info();
-                if (!info.detected) { this.gameDetected = false; return; }
-                if (!info.has_csv) {
-                    await this.startExtraction();
-                } else {
-                    this.showToast('已加载游戏文本数据', 'blue');
-                }
+                if (!info.detected) { this.gameDetected = false; }
             } catch (e) { console.error('Startup error:', e); }
         },
         async startExtraction(onSuccess) {
@@ -73,8 +68,8 @@ const rootApp = createApp({
         },
     },
     mounted() {
-        // window.addEventListener('pywebviewready', () => this.startup());
-        // if (window.pywebview) this.startup();
+        window.addEventListener('pywebviewready', () => this.startup());
+        if (window.pywebview) this.startup();
     },
     template: `
 <div>

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os
 import sys
 import shutil
 
@@ -10,7 +11,8 @@ def patch_exe(exe_path):
     replace_bytes = bytes([0x90, 0x90, 0x90, 0x8B, 0x41, 0xFC, 0xC1, 0xC8, 0x04, 0x90, 0x90, 0x90])
 
     # 备份原文件
-    backup_path = exe_path + '.backup'
+    base, ext = os.path.splitext(exe_path)
+    backup_path = base + '_back' + ext
     print(f"备份原文件到: {backup_path}")
     shutil.copy2(exe_path, backup_path)
 

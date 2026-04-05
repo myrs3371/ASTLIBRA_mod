@@ -1,7 +1,9 @@
 """pywebview JavaScript API bridge"""
 import os
+import shutil
 import threading
 import pandas as pd
+import webview
 from config import Config
 from backend.services.game_manager import GameManager
 from backend.services.mod_manager import ModManager
@@ -144,6 +146,27 @@ class Api:
         except Exception as e:
             return {"ok": False, "msg": str(e)}
 
+    def export_localize_dat(self):
+        try:
+            game_path = Config.get_game_path()
+            if not game_path:
+                return {"ok": False, "msg": "未找到游戏目录"}
+            src = os.path.join(Config.get_dat_folder(game_path), "LOCALIZE_.DAT")
+            if not os.path.exists(src):
+                return {"ok": False, "msg": "LOCALIZE_.DAT 不存在，请先提取或应用文本"}
+            result = self._window.create_file_dialog(
+                webview.SAVE_DIALOG,
+                directory=os.path.expanduser("~"),
+                save_filename="LOCALIZE_.DAT",
+            )
+            if not result:
+                return {"ok": False, "msg": "已取消"}
+            dest = result[0] if isinstance(result, (list, tuple)) else result
+            shutil.copy2(src, dest)
+            return {"ok": True, "msg": f"已导出到 {dest}"}
+        except Exception as e:
+            return {"ok": False, "msg": str(e)}
+
     # ── MODs ─────────────────────────────────────────────────────────────────
 
     def get_mods(self):
@@ -187,6 +210,35 @@ class Api:
             return {"ok": False, "msg": "MOD管理器未初始化"}
         ok, msg = self._mod_manager.restore_all()
         return {"ok": ok, "msg": msg}
+
+    def restore_all_files(self):
+        """一键还原：还原游戏 EXE + 所有游戏数据文件"""
+        try:
+            game_path = Config.get_game_path()
+            if not game_path:
+                return {"ok": False, "msg": "未找到游戏目录"}
+            results = []
+
+            # 还原 EXE
+            exe_path = Config.get_exe_file(game_path)
+            base, ext = os.path.splitext(exe_path)
+            exe_backup = base + '_back' + ext
+            if os.path.exists(exe_backup):
+                shutil.copy2(exe_backup, exe_path)
+                results.append("EXE 已还原")
+            else:
+                results.append("EXE 备份不存在，跳过")
+
+            # 还原游戏数据文件
+            if self._mod_manager:
+                _, msg = self._mod_manager.restore_all()
+                results.append(msg)
+            else:
+                results.append("游戏数据文件还原跳过（MOD管理器未初始化）")
+
+            return {"ok": True, "msg": "；".join(results)}
+        except Exception as e:
+            return {"ok": False, "msg": str(e)}
 
     def delete_mod(self, folder_name):
         """删除MOD（停用就是删除）"""

@@ -186,7 +186,6 @@ class ModManager:
                 os.path.exists(os.path.join(self.mods_dir, name, 'DAT'))
                 for name in mod_folder_names
             )
-
             if mod_has_dat:
                 # MOD 自带 LOCALIZE_.DAT，已在第5步复制完毕，无需重新打包
                 print("MOD 包含 DAT 文本文件，跳过重新打包")
