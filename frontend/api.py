@@ -227,9 +227,12 @@ class Api:
             base, ext = os.path.splitext(exe_path)
             exe_backup = base + '_back' + ext
             if os.path.exists(exe_backup):
-                shutil.copy2(exe_backup, exe_path)
-                os.remove(exe_backup)
-                results.append("EXE 已还原")
+                try:
+                    shutil.copy2(exe_backup, exe_path)
+                    os.remove(exe_backup)
+                    results.append("EXE 已还原")
+                except OSError as e:
+                    results.append(f"EXE 还原后删除备份失败: {e}")
             else:
                 results.append("EXE 备份不存在，跳过")
 
