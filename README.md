@@ -4,48 +4,48 @@
 
 ## 功能特性
 
-- 🎮 **自动检测游戏目录** - 启动时自动查找游戏安装位置
-- 📝 **文本提取** - 从游戏文件中提取对话和界面文本（支持 6 种语言，12000+ 条文本）
-- ✏️ **文本编辑** - 现代化 Web UI 编辑游戏文本，支持搜索、分类筛选、分页浏览
-- 📦 **文本导入** - 将修改后的文本重新打包到游戏中
-- 🔧 **MOD 管理** - 文件覆盖式 MOD 系统，支持图像、音频、字体等任意文件替换
+- **自动检测游戏目录** — 启动时自动查找游戏安装位置
+- **文本提取** — 手动触发从游戏文件提取对话和界面文本（支持 6 种语言，12000+ 条文本）
+- **文本编辑** — Web UI 编辑游戏文本，支持搜索、分类筛选、分页浏览
+- **文本导入** — 将修改后的文本重新打包到游戏中，支持导出 `LOCALIZE_.DAT`
+- **MOD 管理** — 文件覆盖式 MOD 系统，支持图像、音频、字体等任意文件替换，支持批量激活
+- **一键还原** — 还原游戏 EXE 及所有数据文件到原版状态
+- **DIG 图像工具** — `core/TOOLS/` 提供游戏专属 `.dig` 图像格式的解码与编码脚本
 
 ## 系统要求
 
-- Windows 操作系统
-- Python 3.11+ 或直接使用打包好的 exe 文件
+- **Windows**（仅支持 Windows，依赖 Win32 API）
+- Python 3.11+（从源码运行时）或直接使用打包好的 exe
 - ASTLIBRA 游戏本体
 
-## 使用方法（两种方式）
+## 使用方法
 
 ### 方式一：使用打包好的 exe（推荐）
 
-1. 下载 `ASTLIBRA_MOD_Tool.exe`
-2. 将 exe 文件放到游戏目录的子文件夹中：
+1. 下载 `ASTLIBRA_MOD_TOOL.exe`
+2. 将 exe 文件放到**游戏根目录**（与 `ASTLIBRA.exe` 同级）：
    ```
    ASTLIBRA/
    ├── ASTLIBRA.exe
    ├── DATA/
-   └── tools/
-       └── ASTLIBRA_MOD_Tool.exe  ← 放在这里
+   └── ASTLIBRA_MOD_TOOL.exe  ← 放在这里
    ```
 3. 双击运行即可
 
 ### 方式二：从源码运行
 
-1. 克隆或下载本项目到游戏目录的子文件夹中：
+1. 将项目克隆到**游戏根目录**：
    ```
    ASTLIBRA/
    ├── ASTLIBRA.exe
    ├── DATA/
-   └── astlibra_mod_tool/  ← 将工具放在这里
+   ├── config.py        ← 项目根目录必须与游戏根目录一致
+   └── main.py
    ```
-
 2. 安装依赖：
    ```bash
    pip install -r requirements.txt
    ```
-
 3. 启动工具：
    ```bash
    python main.py
@@ -53,125 +53,129 @@
 
 ### 首次使用
 
-1. 启动工具后会自动检测游戏目录
-2. 如果是首次运行，工具会自动执行以下操作：
-   - 解包 `DAT.dxa` 文件
-   - 修改游戏 EXE 文件（创建备份）
-   - 提取游戏文本到 CSV 文件
-   - 重新打包为 DAT 文件
-
-3. 提取完成后，可以在"对话文本"页面查看和编辑文本
+1. 启动工具后自动检测游戏目录
+2. 进入「对话文本」页，点击「**开始提取文本**」手动触发提取流程：
+   - 解包 `DAT.dxa` → 备份为 `DAT_BACK.dxa`
+   - 修改游戏 EXE（原版自动备份为 `ASTLIBRA_back.exe`）
+   - 提取文本到 CSV
+   - 重新打包为 `LOCALIZE_.DAT`
+3. 提取完成后即可在「对话文本」页查看和编辑
 
 ### 编辑文本
 
-1. 点击左侧导航栏的"对话文本"
+1. 进入「对话文本」页
 2. 使用搜索框或分类筛选找到要修改的文本
-3. 双击表格行打开编辑对话框
-4. 修改文本后点击"保存"（自动保存到 CSV）
-5. 点击"应用到游戏"将所有修改打包到游戏中
-6. 重启游戏查看效果
+3. 双击表格行打开编辑对话框，修改后点击「保存」
+4. 点击「**应用到游戏**」将所有修改打包写入游戏文件
+5. 重启游戏查看效果
 
 ### 使用 MOD
 
-1. 点击左侧导航栏的"MOD 管理"
-2. 将 MOD 文件夹放到游戏目录的 `MODS/` 文件夹中
-3. 在列表中选择要激活的 MOD
-4. 点击"激活选中的 MOD"
-5. 重启游戏即可使用 MOD
-6. 点击"还原原版"可恢复所有原始文件
+1. 将 MOD 文件夹放到游戏目录的 `MODS/` 文件夹中，结构示例：
+   ```
+   MODS/
+   └── MyMod/
+       ├── mod_info.json   （可选，包含名称/版本/作者/描述）
+       ├── Image/          （图像替换）
+       ├── Sound/          （音频替换）
+       └── DAT/            （文本替换，需包含 LOCALIZE_.DAT）
+   ```
+2. 进入「MOD 管理」页，选中要激活的 MOD
+3. 点击「**激活选中的 MOD**」（支持批量）
+4. 重启游戏即可生效
+5. 点击「**还原原版**」可恢复所有原始文件
+
+### 还原游戏文件
+
+- **还原文本**：「对话文本」页 → 「还原原版」（从模板重新生成 CSV 和 DAT）
+- **还原所有**：首页「**一键还原**」→ 同时还原 EXE 和所有游戏数据文件夹
+
+### DIG 图像工具（standalone 脚本）
+
+```bash
+# 解码：.dig → .png
+python core/TOOLS/dig_decoder.py <file.dig>
+# 输出 <file.dig>comp.png
+
+# 编码：修改后的 png → .dig（自动创建 .bak 备份）
+python core/TOOLS/dig_encoder.py <file.dig.png>
+# 覆盖写回原 .dig 文件
+```
+
+支持 1/2/3/4 通道 DIG 文件（zlib 压缩 + PNG 滤波，BGRA 字节序）。
 
 ## 项目结构
 
 ```
-astlibra_mod_tool/
-├── main.py                    # 程序入口（pywebview 启动）
-├── config.py                  # 配置管理
-├── requirements.txt           # 依赖列表
-├── web/                       # Web 前端（Vue 3）
-│   ├── index.html            # 主页面
-│   ├── css/                  # 样式文件
-│   └── js/                   # JavaScript 组件
-│       ├── app.js           # 主应用
-│       └── pages/           # 页面组件
-│           ├── home.js      # 首页
-│           ├── dialogue.js  # 文本编辑
-│           └── mod.js       # MOD 管理
-├── frontend/                  # Python API 层
-│   └── api.py                # pywebview JS API 桥接
-├── backend/                   # 后端业务逻辑
-│   └── services/             # 业务服务
-│       ├── game_manager.py   # 游戏目录检测
-│       ├── text_extractor.py # 文本提取
-│       ├── text_importer.py  # 文本导入
-│       └── mod_manager.py    # MOD 管理
-└── core/                      # 核心工具
-    ├── _ALOC.py              # ALOC 格式处理
-    ├── patch_exe.py          # EXE 修补
-    ├── text_classifier.py    # 文本分类
-    └── read_csv.py           # CSV 读取
+ASTLIBRA_MOD_TOOL.spec     # PyInstaller 打包配置
+main.py                    # 程序入口（pywebview 原生窗口）
+config.py                  # 路径管理与游戏目录检测
+requirements.txt           # Python 依赖
+web/                       # Vue 3 前端（由 pywebview 托管）
+│   ├── index.html
+│   ├── css/style.css
+│   └── js/
+│       ├── app.js         # Vue 应用初始化与路由
+│       └── pages/
+│           ├── home.js    # 首页 + 一键还原
+│           ├── dialogue.js # 文本提取与编辑
+│           └── mod.js     # MOD 管理
+frontend/api.py            # Python API 桥接（暴露给 JS 的所有方法）
+backend/services/
+│   ├── game_manager.py    # 游戏目录检测
+│   ├── text_extractor.py  # 5 步提取流水线
+│   ├── text_importer.py   # 文本导入/还原
+│   └── mod_manager.py     # MOD 激活（7 步）/ 还原
+core/
+│   ├── _ALOC.py           # ALOC 二进制格式读写
+│   ├── patch_exe.py       # 游戏 EXE 修补
+│   ├── text_classifier.py # 文本分类规则
+│   ├── read_csv.py        # CSV 读取（含分类）
+│   ├── ASTLIBRA_Dec.exe   # .dxa 解包器
+│   └── TOOLS/
+│       ├── dig_decoder.py # .dig → PNG
+│       └── dig_encoder.py # PNG → .dig
 ```
 
 ## 技术栈
 
-- **UI 框架**: Vue 3 + pywebview（原生窗口 + Web UI）
-- **后端**: Python 3.11+
-- **数据处理**: Pandas
-- **打包工具**: PyInstaller
+- **UI 框架**: Vue 3（本地打包，无 CDN）+ pywebview（edgechromium 后端）
+- **Python 后端**: 3.11+，Pandas 处理 CSV，threading 异步任务
+- **打包**: PyInstaller（`console=False`，输出 `dist/ASTLIBRA_MOD_TOOL.exe`）
+
+## 打包为 exe
+
+```bash
+pip install pyinstaller
+pyinstaller ASTLIBRA_MOD_TOOL.spec
+```
+
+输出：`dist/ASTLIBRA_MOD_TOOL.exe`
+
+调试时在 `ASTLIBRA_MOD_TOOL.spec` 第 32 行将 `console=False` 改为 `console=True` 再打包。
 
 ## 注意事项
 
-⚠️ **重要提示**：
-- 工具会自动备份原始游戏文件（`DAT_BACK.dxa`）
-- 首次运行会修改游戏 EXE 文件，建议提前备份
-- 修改文本后需要点击"导入到游戏"才能在游戏中生效
-- 建议在修改前备份整个游戏目录
+- 工具会自动备份原始游戏文件（`DAT_BACK.dxa`、`ASTLIBRA_back.exe`），建议初次运行前手动备份整个游戏目录
+- 修改文本后需点击「应用到游戏」才能在游戏中生效
+- MOD 激活时会重新解压游戏数据，耗时较长，请勿中途关闭
 
 ## 常见问题
 
-### Q: 提示"未找到游戏目录"怎么办？
-A: 确保工具放在游戏目录的子文件夹中，且游戏目录包含 `ASTLIBRA.exe` 和 `DATA` 文件夹。
+**Q: 提示"未找到游戏目录"？**  
+A: 确保工具（exe 或源码项目根目录）与 `ASTLIBRA.exe` 位于**同一文件夹**，且游戏目录包含 `DATA` 子文件夹。
 
-### Q: 修改文本后游戏中没有变化？
-A: 确保点击了"导入到游戏"按钮，并重启游戏。
+**Q: 修改文本后游戏中没有变化？**  
+A: 确认已点击「应用到游戏」，然后重启游戏。
 
-### Q: 如何恢复原始游戏文件？
-A: 将 `DATA/DAT_BACK.dxa` 重命名为 `DAT.dxa` 即可恢复。
+**Q: 如何恢复原始游戏文件？**  
+A: 首页点击「一键还原」，或手动将 `DATA/DAT_BACK.dxa` 重命名为 `DAT.dxa`。
 
-## 开发相关
+## 致谢
 
-### 打包为 exe
-
-```bash
-# 方式一：使用打包脚本（Windows）
-build.bat
-
-# 方式二：手动打包
-pip install pyinstaller
-pyinstaller build.spec
-```
-
-打包后的文件位于 `dist/ASTLIBRA_MOD_Tool.exe`
-
-## 架构说明
-
-项目采用 **Python 后端 + Web 前端** 的混合架构：
-
-- **前端**: Vue 3 单页应用，提供现代化的用户界面
-- **桥接层**: pywebview 提供原生窗口和 Python-JavaScript 通信
-- **后端**: Python 处理游戏文件操作、文本提取/导入、MOD 管理
-
-数据流：`Web UI → JS API → Python API (api.py) → Backend Services → Core Tools`
-
-详细架构文档请查看 [CLAUDE.md](CLAUDE.md)
+感谢提供工具包的 Gize 大佬  
+感谢遗忘的银灵（FORSAKENSILVER）提供 DIG 图像格式工具
 
 ## 许可证
 
-本项目仅供学习和个人使用，请勿用于商业用途。
-
-## 免责声明
-
-本工具仅用于学习和研究目的。使用本工具修改游戏文件的风险由用户自行承担。请支持正版游戏。
-
-## 致谢
-感谢提供工具包的Gize大佬
-感谢遗忘的银灵
+本项目仅供学习和个人使用，请勿用于商业用途。使用本工具修改游戏文件的风险由用户自行承担，请支持正版游戏。

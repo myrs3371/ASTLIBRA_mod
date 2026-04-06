@@ -22,6 +22,8 @@ const rootApp = createApp({
             extractionStep: '正在初始化...',
             extractionError: null,
             gameDetected: true,
+            restoring: false,
+            restoreConfirm: { visible: false, onOk: null },
         };
     },
     computed: {
@@ -31,6 +33,21 @@ const rootApp = createApp({
     },
     methods: {
         navigate(page) { this.currentPage = page; },
+        askRestoreAll() {
+            this.restoreConfirm = { visible: true, onOk: this.doRestoreAll };
+        },
+        async doRestoreAll() {
+            this.restoreConfirm.visible = false;
+            this.restoring = true;
+            try {
+                const r = await pywebview.api.restore_all_files();
+                this.showToast(r.msg, r.ok ? 'green' : 'red');
+            } catch (e) {
+                this.showToast('还原失败: ' + e, 'red');
+            } finally {
+                this.restoring = false;
+            }
+        },
         showToast(message, type = 'blue') {
             this.toast = { visible: true, message, type };
             clearTimeout(this._toastTimer);
@@ -79,7 +96,7 @@ const rootApp = createApp({
             <template v-if="!gameDetected">
                 <h2 class="error-title">未找到游戏目录</h2>
                 <p style="margin-top:14px;color:var(--text-secondary);font-size:13px;line-height:1.7">
-                    请将工具放在游戏目录的子文件夹中，<br>确保上级目录中存在 ASTLIBRA.exe 和 DATA/
+                    请将工具放在游戏根目录中（与 ASTLIBRA.exe 同级），<br>确保同一目录下存在 ASTLIBRA.exe 和 DATA/
                 </p>
             </template>
             <template v-else-if="extractionError">
@@ -123,7 +140,9 @@ const rootApp = createApp({
         <main class="main-content">
             <component :is="currentComponent"
                        :show-toast="showToast"
-                       :start-extraction="startExtraction">
+                       :start-extraction="startExtraction"
+                       :ask-restore-all="askRestoreAll"
+                       :restoring="restoring">
             </component>
         </main>
     </div>
@@ -131,6 +150,26 @@ const rootApp = createApp({
     <!-- Toast 通知 -->
     <div v-if="toast.visible" class="toast" :class="'toast-' + toast.type">
         {{ toast.message }}
+    </div>
+
+    <!-- 还原确认对话框 -->
+    <div v-if="restoreConfirm.visible" class="modal-overlay" @click.self="restoreConfirm.visible = false">
+        <div class="modal modal-sm">
+            <div class="modal-header"><h3>确认还原</h3></div>
+            <div class="modal-body">
+                <p style="line-height:1.7">
+                    此操作将：<br>
+                    · 用 <code>ASTLIBRA_back.exe</code> 覆盖当前 EXE<br>
+                    · 删除游戏数据文件夹（DAT / Image / Sound 等）<br>
+                    · 将备份 dxa 文件恢复为原版文件名<br><br>
+                    <span style="color:var(--danger)">已激活的 MOD 效果将全部消失，不可撤销。</span>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" @click="restoreConfirm.onOk && restoreConfirm.onOk()">确认还原</button>
+                <button class="btn btn-secondary" @click="restoreConfirm.visible = false">取消</button>
+            </div>
+        </div>
     </div>
 </div>
     `,

@@ -1,0 +1,219 @@
+--------------------------------
+-
+-　ＤＸアーカイブ説明書
+-
+-　Version 1.09
+-
+--------------------------------
+
+・概要
+
+　　　lzhファイル や zipファイルのように、複数のファイルを
+　　一つのファイルに纏めるソフトです。
+
+　　　作成したアーカイブファイルはＤＸライブラリでも読み込めます。
+
+
+・ファイル説明
+
+　　DxaEncode.exe　　　　　アーカイブファイルを作成するソフトです
+　　DxaDecode.exe　　　　　アーカイブファイルを元に戻すソフトです
+
+　　Source
+　　　　　DxaEncode.exe や DxaDecode.exe のプログラムソースが入っています。
+　　　　(整理していないので汚いです)
+
+
+・使い方
+
+
+　・アーカイブファイルの作成方法と使用方法
+
+　　　１．中身を一つに纏めたいフォルダを DxaEncode.exe にドラッグ＆ドロップします
+　　　２．フォルダ名と同じ名前のＤＸアーカイブファイルが、拡張子 dxa で作成されます
+　　　３．ＤＸライブラリはＤＸアーカイブファイルをフォルダとみなすので、例えば
+
+　　　Image というフォルダから画像を読み込んでいたとします。
+
+　　　　<ファイル構成>
+　　　　実行ファイル
+　　　　Imageフォルダ(中にGraph1.bmpがある)
+
+　　　　GraphHandle = LoadGraph( "Image\\Graph1.bmp" ) ;
+
+
+　　　　この Image フォルダを DxaEncode.exe にドラッグ＆ドロップして Image.dxa を
+　　　作成し、Image.dxa を Image フォルダの代わりに配置することが出来ます。
+
+　　　　<ファイル構成>
+　　　　実行ファイル
+　　　　Image.dxa
+
+　　　　GraphHandle = LoadGraph( "Image\\Graph1.bmp" ) ;
+
+
+　　　因みに、ＤＸアーカイブファイルの名前を変更すると指定すべきフォルダ名も変わります。
+
+　　　　<ファイル構成>
+　　　　実行ファイル
+　　　　ImageGraphics.dxa
+
+　　　　GraphHandle = LoadGraph( "ImageGraphics\\Graph1.bmp" ) ;
+
+
+
+　・パスワード設定
+
+　　　　　コマンドプロンプト上で使用する場合は、-K オプションを使うことにより
+　　　　展開時のパスワードを設定することが出来ます。
+
+　　　　DxaEncode.exe -K:Pass c:\Data
+
+
+　　　　　パスワードを設定したＤＸアーカイブをＤＸライブラリで使用する場合は LoadGraph 関数
+　　　　などを使用する前に予め SetDXArchiveKeyString 関数でパスワードを指定しておく
+　　　　必要があります。
+
+　　　　　　SetDXArchiveKeyString( "Pass" ) ;
+
+
+　　　※パスワードを設定したＤＸアーカイブの安全性について
+
+　　　　　DxaEncode.exe のバージョン 1.07 以降で -K オプションを使用してパスワードつきの
+　　　　ＤＸアーカイブを作成した場合、パスワードを知ることなくＤＸアーカイブの中の
+　　　　ファイルを閲覧することはできませんが( 尚、バージョン 1.06 まではパスワードを
+　　　　知らなくても閲覧することができてしまう問題がありました… )、そのパスワード付きの
+　　　　ＤＸアーカイブをプログラム内で使用するために SetDXArchiveKeyString でパスワードの
+　　　　文字列をプログラム中に書き加える必要がある以上、技術力のある人間がソフトの
+　　　　実行ファイルを解析すればパスワードが判明し、中身を閲覧できてしまいます。
+　　　　　これはソフトの実行ファイルなどを容易に解析することができるパソコンという環境では
+　　　　避けることができないことなので
+
+　　　　　『パスワード付きのＤＸアーカイブであっても中身を見られてしまうリスクはある』
+
+　　　　という認識で扱うようにしてください。
+
+
+　　　※DxaEncode.exe のバージョン 1.02 ～ 1.06 で作成したパスワード付きＤＸアーカイブでは
+　　　　解析によってパスワードが分かってしまう問題について
+
+　　　　　DxaEncode.exe のバージョン 1.02 ～ 1.06 の DxaEncode.exe( ＤＸライブラリのバージョン 3.19b までに
+　　　　同梱されている DxaEncode.exe )で作成したパスワード付きＤＸアーカイブは、アーカイブファイルを
+　　　　解析するだけでパスワードが分かってしまうという問題があります。
+　　　　　なので、バージョン 1.07 の DxaEncode.exe( ＤＸライブラリのバージョン 3.19d 以降に
+　　　　同梱されている DxaEncode.exe )でＤＸアーカイブを再作成する場合は以前とは別のパスワードを
+　　　　使用するようにしてください。
+
+
+
+　・アーカイブファイルの展開方法
+
+　　　１．ＤＸアーカイブファイルを DxaDecode.exe にドラッグ＆ドロップします
+　　　２．ＤＸアーカイブファイルがある位置と同じフォルダにＤＸアーカイブファイルの中身が展開されます
+
+
+
+　・その他のオプション
+
+　　　-NP　アーカイブするファイルを圧縮しない
+
+　　　　　　　　デフォルトではファイルサイズを小さくするのと、ファイル解析を難しくするために
+　　　　　　　圧縮処理を行いますが、このオプションを指定すると圧縮処理を行わなくなります。
+　　　　　　　　圧縮処理は時間が掛かるので、開発中はこのオプションを付けて高速にアーカイブファイルを
+　　　　　　　作成して、完成版では圧縮する、といった使い分けに有効です。
+	-NP Do not compress files to be archived.
+
+　　　　　　　　By default, files are compressed to reduce file size and to make file analysis more difficult.
+　　　　　　　However, this option will disable the compression process.
+　　　　　　　　Since the compression process takes time, it is recommended to use this option during development to create archive files at high speed and then compress them in the final version.
+　　　　　　　During development, this option is useful for creating archive files at high speed and then compressing them in the finished version.
+
+
+
+
+　　　-NK　暗号化処理を施さない
+
+　　　　　　　　『-K』オプションでパスワードを設定することができますが、『-K』オプションを使用しなく
+　　　　　　　てもデフォルトのパスワードでアーカイブファイルは暗号化処理が施されるようになっているの
+　　　　　　　ですが、このオプションを指定することで暗号化処理を一切行わないようにすることができます。
+
+-NK Do not apply encryption
+
+　　　　　　　　The "-K" option allows you to set a password, but you can use the default password for archive files without using the "-K" option.
+　　　　　　　The "-K" option allows you to set a password, but even if you do not use the "-K" option, the archive file will be encrypted with the default password.
+　　　　　　　However, this option can be used to disable the encryption process altogether.
+
+
+
+　　　-NS　進行状況を表示しない
+
+　　　　　　　　デフォルトではアーカイブファイルの進行状況を表示するようになっていますが、
+　　　　　　　このオプションを使用すると進行状況の表示がされなくなります。
+	
+	　-NS Do not display progress
+
+　　　　　　　　By default, the progress of the archive file is displayed.
+　　　　　　　This option will not show the progress of the archive file.
+
+
+　　　-H 　ファイルの先端と末端をハフマン圧縮するサイズ( 単位:キロバイト )の指定( 指定できる範囲は 0～255 )
+
+　　　　　　　　ＤＸアーカイブではアーカイブファイルの中身を解析しにくくするために jpg や png や
+　　　　　　　wav などのメジャーなファイルフォーマットについては各ファイルの先端と末端を
+　　　　　　　ハフマン圧縮していて、デフォルトでは前後 10KB づつ、合計 20KB をハフマン圧縮して
+　　　　　　　いますが、このオプションで圧縮するサイズを変更することができます。
+　　　　　　　( 例： -H:20  ←ファイルの先端と末端それぞれ20KBつづ、全体で40KBをハフマン圧縮する )
+　　　　　　　　-H:255 を指定した場合は特別で、ファイル全体をハフマン圧縮します。
+　　　　　　　　また、-H:0 とすることでハフマン圧縮をしないようにすることもできます。
+	
+	-H Specifies the size (in kilobytes) of the Huffman compression of the top and bottom of the file (range 0 to 255).
+
+　　　　　　　　DX archives can use jpg, png, wav, or other major file formats to make it harder to analyze the contents of archive files.
+　　　　　　　The DX Archive compresses the leading and trailing edges of major file formats such as jpg, png, and wav to make it difficult to analyze the contents of the archive file.
+　　　　　　　By default, Huffman compression is applied to the first and last 10KB of each file, for a total of 20KB.
+　　　　　　　You can change the compression size with this option (e.g., -H:20).
+　　　　　　　(e.g.: -H:20 ← compresses 20KB at each end of the file, for a total of 40KB)
+　　　　　　　　If -H:255 is specified, the entire file will be Huffman compressed.
+　　　　　　　　H:0 can also be used to disable Huffman compression.
+
+
+
+　　　-AH　全てのファイルフォーマットをハフマン圧縮の対象とする
+
+　　　　　　　　ＤＸアーカイブではアーカイブファイルの中身を解析しにくくするために jpg や png や
+　　　　　　　wav などのメジャーなファイルフォーマットについてのみ各ファイルの先端と末端を
+　　　　　　　ハフマン圧縮していますが、このオプションを指定するとファイルフォーマットに関係なく
+　　　　　　　すべてのファイルをハフマン圧縮の対象とします。
+
+-AH All file formats are subject to Huffman compression.
+
+　　　　　　　　To make it harder to analyze the contents of archive files, the DX archive does not include major file formats such as jpg, png, wav, etc.
+　　　　　　　To make it harder to analyze the contents of archive files, the DX archive only compresses the leading and trailing edges of each file in major file formats such as jpg, png, and wav.
+　　　　　　　However, this option will target all files for Huffman compression regardless of file format.
+　　　　　　　This option makes all files subject to Huffman compression, regardless of file format.
+
+
+　　　-MP　ＤＸライブラリ独自の圧縮処理の圧縮率を最大にする
+
+　　　　　　　　ＤＸライブラリ独自の圧縮処理を施すファイルについて、圧縮率を最大にします。
+　　　　　　　作成されるＤＸアーカイブファイルのサイズは若干小さくなりますが、ＤＸアーカイブ
+　　　　　　　ファイル作成に掛かる時間は長くなります。
+
+-MP Maximize compression ratio for DX library's own compression process
+
+　　　　　　　　Maximizes the compression ratio for files that are subject to the DX library's own compression process.
+　　　　　　　The size of the created DX archive file will be slightly smaller, but the time required to create the DX archive file will be longer.
+　　　　　　　file size will be slightly smaller, but the time required to create the DX archive file will be longer.
+
+
+・履歴
+
+　　　1.09　圧縮率を最大にするオプション -MP を追加
+　　　1.08　暗号鍵の長さを56bitに変更( アメリカの法規制の関係で 56bit化 )
+　　　1.07　暗号化処理を変更( パスワードを指定した場合の解読難度を向上 )
+　　　1.06　ＤＸアーカイブファイルの64bit対応
+　　　1.05　暗号化処理を一部変更　
+　　　1.03　ファイルヘッダにコードページを記録するようにフォーマットを変更
+　　　1.02　暗号化機能搭載
+　　　1.01　圧縮機能搭載
+　　　1.00　公開バージョン

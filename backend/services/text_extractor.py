@@ -5,6 +5,8 @@ import shutil
 from typing import Tuple
 from config import Config
 
+_NO_WINDOW = subprocess.CREATE_NO_WINDOW
+
 
 class TextExtractor:
     """文本提取器"""
@@ -56,7 +58,9 @@ class TextExtractor:
         try:
             result = subprocess.run(
                 [Config.ASTLIBRA_DEC, dat_file],
-                cwd=self.data_dir
+                cwd=self.data_dir,
+                capture_output=True,
+                creationflags=_NO_WINDOW
             )
 
             if result.returncode != 0:
@@ -88,6 +92,8 @@ class TextExtractor:
             result = subprocess.run(
                 ['python', self.patch_exe_script, self.exe_file],
                 cwd=Config.CORE_DIR,
+                capture_output=True,
+                creationflags=_NO_WINDOW
             )
 
             if result.returncode != 0:
@@ -116,7 +122,9 @@ class TextExtractor:
             # 在core目录执行解包
             result = subprocess.run(
                 ['python', '_ALOC.py', 'LOCALIZE_.DAT_dec', '_temp_extracted.csv', '-e'],
-                cwd=Config.CORE_DIR
+                cwd=Config.CORE_DIR,
+                capture_output=True,
+                creationflags=_NO_WINDOW
             )
 
             if result.returncode != 0:
@@ -157,7 +165,9 @@ class TextExtractor:
             # 在core目录执行打包
             result = subprocess.run(
                 ['python', '_ALOC.py', 'LOCALIZE_.DAT_dec', '_temp_pack.csv', '-p'],
-                cwd=Config.CORE_DIR
+                cwd=Config.CORE_DIR,
+                capture_output=True,
+                creationflags=_NO_WINDOW
             )
 
             if result.returncode != 0:

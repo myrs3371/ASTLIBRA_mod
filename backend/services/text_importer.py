@@ -2,6 +2,8 @@
 import os
 import subprocess
 import shutil
+
+_NO_WINDOW = subprocess.CREATE_NO_WINDOW
 from typing import Tuple
 from config import Config
 
@@ -43,7 +45,9 @@ class TextImporter:
             # 在core目录执行打包
             result = subprocess.run(
                 ['python', '_ALOC.py', 'LOCALIZE_.DAT_dec', '_temp_pack.csv', '-p'],
-                cwd=Config.CORE_DIR
+                cwd=Config.CORE_DIR,
+                capture_output=True,
+                creationflags=_NO_WINDOW
             )
 
             if result.returncode != 0:
@@ -85,7 +89,9 @@ class TextImporter:
             # 在core目录执行解包
             result = subprocess.run(
                 ['python', '_ALOC.py', 'LOCALIZE_.DAT_dec', '_temp_restore.csv', '-e'],
-                cwd=Config.CORE_DIR
+                cwd=Config.CORE_DIR,
+                capture_output=True,
+                creationflags=_NO_WINDOW
             )
 
             if result.returncode != 0:

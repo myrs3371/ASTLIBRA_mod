@@ -67,12 +67,17 @@ core/                     # Binary processing tools
 │   ├── _ALOC.py         # ALOC format packer/unpacker (-e export, -p pack)
 │   ├── patch_exe.py     # Game EXE patcher
 │   ├── text_classifier.py
-│   └── ASTLIBRA_Dec.exe # DAT.dxa unpacker
+│   ├── ASTLIBRA_Dec.exe # DAT.dxa unpacker
+│   └── TOOLS/           # Standalone image conversion scripts
+│       ├── dig_decoder.py  # .dig → PNG (game image format, zlib+PNG filter)
+│       └── dig_encoder.py  # PNG → .dig (accepts *.dig.png files)
 ```
 
 ## Key Workflows
 
-### Text Extraction Pipeline (First Run)
+### Text Extraction Pipeline (Manual Trigger)
+Triggered when user clicks "开始提取文本" on the dialogue page (`dialoguePage.triggerExtraction()` → `pywebview.api.start_extraction()`). Runs in a background thread; frontend polls `get_extraction_status()` every 500ms.
+
 1. Unpack `DAT.dxa` using `ASTLIBRA_Dec.exe` → `DAT/` folder
 2. Rename original `DAT.dxa` → `DAT_BACK.dxa` (backup)
 3. Patch game EXE (byte replacement to enable text reading)
@@ -95,17 +100,29 @@ core/                     # Binary processing tools
 - File-based override system in `MODS/` directory
 - MOD folder structure: `MODS/MyMod/Image/xxx.png`, `MODS/MyMod/Sound/xxx.ogg`, etc.
 - Each MOD folder contains `mod_info.json` (optional) + data subfolders (Image, Sound, DAT, etc.)
-- On activation: iterates through `Config.DATA_LIST` folders, copies matching subfolders from MOD to game directory using `shutil.copytree(..., dirs_exist_ok=True)`
+- Active MODs tracked in `MODS/active_mods.json`: `{"mods": [{"name": "...", "folder_name": "...", ...}]}`
+- On activation (7-step pipeline): patch EXE → rename backups to originals → delete game data folders → re-extract all `.dxa` files → copy MOD files over extracted data → rename originals back to backups → repack `LOCALIZE_.DAT`
 - Supports batch activation (multiple MODs at once)
-- On restore: deletes game folders from `Config.DATA_LIST` and re-extracts from `DAT_BACK.dxa`
+- On restore (`restore_all_mods`): delete all game data folders, rename `*_BACK.dxa` → `*.dxa`, clear `active_mods.json`
+- `restore_all_files()`: restores EXE from `ASTLIBRA_back.exe` backup then **deletes** the backup; `.dxa` backups are consumed by rename so they also disappear
 
 ## Path Management
 
 The `Config` class centralizes all path logic:
-- Auto-detects game directory by searching for `ASTLIBRA.exe` + `DATA/`
-- Tool must be placed in a subdirectory of the game folder
+- Auto-detects game directory by checking for `ASTLIBRA.exe` + `DATA/` in the same folder as the tool (or EXE when frozen)
+- When compiled: tool EXE must be placed **in the game root** (same folder as `ASTLIBRA.exe`)
+- When running from source: `PROJECT_ROOT` (repo root) must be the game folder
 - All paths resolve relative to detected game root
 - `Config.DATA_LIST = ['Image', 'Image2K', 'Image4K', 'Image720p', 'Sound', 'DAT']` - defines game data folders used by MOD system
+- Three parallel lists used by MOD activation pipeline:
+  | DATA_LIST | DATA_BACK_LIST | DATA_GAME_LIST |
+  |-----------|----------------|----------------|
+  | DAT | DAT_BACK.dxa | DAT.dxa |
+  | Image | Image_BACK.dxa | Image.dxa |
+  | Image2K | Image2K_BACK.dxa | Image2K.dxa |
+  | Image4K | Image4K_BACK.dxa | Image4K.dxa |
+  | Image720p | Image720p_BACK.dxa | Image720p.dxa |
+  | Sound | Sound_BACK.dxa | Sound.dxa |
 
 ## Data Flow
 
@@ -136,12 +153,15 @@ DAT.dxa (binary)
 - Never blocks UI thread directly
 
 ### File Operations
-- Tool modifies game files - always creates backups (`DAT_BACK.dxa`, EXE `.backup`)
-- First run triggers automatic extraction pipeline
+- Tool modifies game files - creates backups (`DAT_BACK.dxa`, `ASTLIBRA_back.exe`); both are deleted automatically when `restore_all_files()` completes
+- Extraction is manually triggered; startup only checks `has_csv` to show/hide the extraction prompt
 - CSV is the source of truth for text editing
 - MOD system uses JSON manifests (`mod_info.json`) for metadata
 - Vue.js bundled locally (`web/js/vue.global.prod.js`) to eliminate CDN load delays
 - pywebview uses `edgechromium` backend (see [main.py:38](main.py#L38))
+
+### Platform Constraint
+- **Windows-only**: All `subprocess.run()` calls pass `creationflags=subprocess.CREATE_NO_WINDOW`, which is a Windows-only flag. The app is not cross-platform.
 
 ### Error Handling
 - All long-running operations use background threads to prevent UI blocking
@@ -157,10 +177,13 @@ DAT.dxa (binary)
 - [config.py](config.py) - Path management and game directory detection (auto-detects by searching for `ASTLIBRA.exe`)
 - [core/_ALOC.py](core/_ALOC.py) - Binary format parser for game text files (`-e` export, `-p` pack)
 - [core/text_classifier.py](core/text_classifier.py) - Text classification by keyword rules (dialogue, UI, item, etc.)
+- [core/read_csv.py](core/read_csv.py) - CSV reader used by `get_texts()`, applies classification
 - [backend/services/text_extractor.py](backend/services/text_extractor.py) - 5-step extraction pipeline
 - [backend/services/text_importer.py](backend/services/text_importer.py) - Text import/revert logic
-- [backend/services/mod_manager.py](backend/services/mod_manager.py) - MOD activation/restore logic
+- [backend/services/mod_manager.py](backend/services/mod_manager.py) - MOD activation (7-step) / restore logic
 - [ASTLIBRA_MOD_TOOL.spec](ASTLIBRA_MOD_TOOL.spec) - PyInstaller build configuration (root level, not inside a subdirectory)
+- [core/TOOLS/dig_decoder.py](core/TOOLS/dig_decoder.py) - Standalone: `python dig_decoder.py <file.dig>` → `<file.dig>.png`. Supports 1/2/3/4-channel DIG files (zlib-compressed, PNG-filtered, little-endian BGRA).
+- [core/TOOLS/dig_encoder.py](core/TOOLS/dig_encoder.py) - Standalone: `python dig_encoder.py <file.dig.png>` → overwrites `<file.dig>` in-place (creates `.bak` backup automatically).
 
 ## Development Notes
 
@@ -169,6 +192,19 @@ DAT.dxa (binary)
 - Methods must be synchronous or use threading for async operations
 - Return values are automatically serialized to JSON
 - Frontend accesses via `window.pywebview.api.method_name()`
+
+Key API methods in [frontend/api.py](frontend/api.py):
+- `get_game_info()` → `{detected, game_path, has_csv}`
+- `start_extraction()` / `get_extraction_status()` — async extraction with polling
+- `get_texts(page, page_size, search, category)` → paginated text list
+- `update_text(offset, new_text)` — updates ZH_CN column in CSV only
+- `apply_changes()` — repacks CSV → LOCALIZE_.DAT → game
+- `restore_original()` — re-exports from template, overwrites CSV and DAT
+- `export_localize_dat()` — opens Save dialog to export current LOCALIZE_.DAT
+- `activate_mods(folder_names)` / `get_mod_status()` — async MOD activation with polling
+- `restore_all_mods()` — deletes game folders, renames backups back
+- `restore_all_files()` — restores EXE from backup + calls `restore_all_mods()`
+- `delete_mod(folder_name)` — removes MOD folder from MODS/
 
 ### CSV Data Structure
 - 6 language columns: JPN, US, ZH_CN, ZH_TW, KO, ES

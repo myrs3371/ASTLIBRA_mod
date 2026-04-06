@@ -11,7 +11,7 @@ const MOD_ICONS = {
 
 const modPage = {
     name: 'ModPage',
-    props: ['showToast'],
+    props: ['showToast', 'askRestoreAll', 'restoring'],
     data() {
         return {
             mods: [],
@@ -73,18 +73,6 @@ const modPage = {
             this.modProgress = { visible: false, step: '', success: false, error: null };
             if (ok)  this.showToast('MOD 激活成功！', 'green');
             else if (err) this.showToast(err, 'red');
-        },
-        restoreAll() {
-            this.showConfirm(
-                '确认还原原版',
-                '确定要还原所有原版文件吗？\n\n这将删除以下文件夹：\n• DAT\n• Image / Image2K / Image4K / Image720p\n• Sound\n\n然后重新解压 DAT_BACK.dxa 备份文件。',
-                '确认还原', '#f59e0b',
-                async () => {
-                    const r = await pywebview.api.restore_all_mods();
-                    this.showToast(r.msg, r.ok ? 'green' : 'red');
-                    if (r.ok) await this.fetchMods();
-                }
-            );
         },
         deleteMod() {
             if (!this.selectedMod) return;
@@ -155,9 +143,9 @@ const modPage = {
                     <span v-if="checkedMods.length > 0"
                           style="margin-left:2px;opacity:0.75;font-size:12px">({{ checkedMods.length }})</span>
                 </button>
-                <button class="btn btn-secondary btn-block" @click="restoreAll">
+                <button class="btn btn-secondary btn-block" :disabled="restoring" @click="askRestoreAll">
                     <span v-html="icn('undo')"></span>
-                    还原原版文件
+                    {{ restoring ? '还原中...' : '还原原版文件' }}
                 </button>
             </div>
         </div>

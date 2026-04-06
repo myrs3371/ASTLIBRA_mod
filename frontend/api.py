@@ -174,6 +174,9 @@ class Api:
             return []
         try:
             mods = self._mod_manager.scan_mods()
+            active = {m['folder_name'] for m in self._mod_manager.get_active_mods()}
+            for mod in mods:
+                mod['is_active'] = mod['folder_name'] in active
             return mods
         except Exception:
             return []
@@ -225,6 +228,7 @@ class Api:
             exe_backup = base + '_back' + ext
             if os.path.exists(exe_backup):
                 shutil.copy2(exe_backup, exe_path)
+                os.remove(exe_backup)
                 results.append("EXE 已还原")
             else:
                 results.append("EXE 备份不存在，跳过")

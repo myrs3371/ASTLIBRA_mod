@@ -129,15 +129,23 @@ class ModManager:
                     original_path = os.path.join(self.data_dir, original_name)
                     os.rename(backup_path, original_path)
 
-            # ── 3. 删除已解压的游戏数据文件夹 ────────────────────────────────
+            # ── 3. 删除已解压的游戏数据文件夹（仅删除 MOD 中存在的数据文件夹）────
             report("正在清理旧版游戏数据...")
-            for mod_dir in Config.DATA_LIST:
+            mod_data_folders = set()
+            for mod_folder_name in mod_folder_names:
+                mod_path = os.path.join(self.mods_dir, mod_folder_name)
+                for data_folder in Config.DATA_LIST:
+                    if os.path.exists(os.path.join(mod_path, data_folder)):
+                        mod_data_folders.add(data_folder)
+            for mod_dir in mod_data_folders:
                 if os.path.isdir(os.path.join(self.data_dir, mod_dir)):
                     shutil.rmtree(os.path.join(self.data_dir, mod_dir))
 
-            # ── 4. 重新解压游戏原版 dxa 文件 ──────────────────────────────────
+            # ── 4. 重新解压游戏原版 dxa 文件（仅解压 MOD 涉及的数据文件夹）────
             report("正在解压原版游戏数据，请稍候...")
-            for data_name in Config.DATA_GAME_LIST:
+            for data_folder in mod_data_folders:
+                idx = Config.DATA_LIST.index(data_folder)
+                data_name = Config.DATA_GAME_LIST[idx]
                 dxa_file = os.path.join(self.data_dir, data_name)
                 if os.path.exists(dxa_file):
                     try:
