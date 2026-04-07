@@ -33,11 +33,14 @@
       "Bash(claude help:*)",
       "Bash(cp:*)",
       "Bash(cp -r /tmp/sanyuan-skills/skills/sigma 'C:\\\\Users\\\\lenovo\\\\.claude\\\\skills\\\\')",
-      "Bash(cp -r /tmp/sanyuan-skills/skills/skill-forge 'C:\\\\Users\\\\lenovo\\\\.claude\\\\skills\\\\')"
+      "Bash(cp -r /tmp/sanyuan-skills/skills/skill-forge 'C:\\\\Users\\\\lenovo\\\\.claude\\\\skills\\\\')",
+      "Bash(venv/Scripts/pip install:*)"
     ],
     "additionalDirectories": [
       "e:\\game\\ASTLIBRA\\ASTLIBRA\\astlibra_mod_tool",
-      "C:\\Users\\lenovo\\.claude"
+      "C:\\Users\\lenovo\\.claude",
+      "D:\\Users\\lenovo\\Desktop\\mod\\ASTLIBRA_mod\\ASTLIBRA_mod",
+      "D:\\Users\\lenovo\\Desktop\\mod\\ASTLIBRA_mod\\ASTLIBRA_mod\\.git"
     ]
   }
 }
