@@ -86,10 +86,10 @@ class ModManager:
         except Exception as e:
             print(f"保存激活MOD列表失败: {e}")
 
-    def is_mod_active(self, mod_name: str) -> bool:
+    def is_mod_active(self, mod_folder_name: str) -> bool:
         """检查MOD是否已激活"""
         active_mods = self.get_active_mods()
-        return any(mod['name'] == mod_name for mod in active_mods)
+        return any(mod['folder_name'] == mod_folder_name for mod in active_mods)
 
     def activate_mods(self, mod_folder_names: List[str],
                       status_callback=None) -> Tuple[bool, str]:
@@ -155,12 +155,37 @@ class ModManager:
 
             # ── 5. 复制 MOD 文件 ──────────────────────────────────────────────
             activated_count = 0
+            activated_mods = []
             for mod_folder_name in mod_folder_names:
                 report(f"正在应用 MOD：{mod_folder_name}...")
                 mod_path = os.path.join(self.mods_dir, mod_folder_name)
                 if not os.path.exists(mod_path):
                     print(f"警告: MOD文件夹不存在 {mod_path}")
                     continue
+
+                # 读取 MOD 信息
+                mod_info_path = os.path.join(mod_path, "mod_info.json")
+                if os.path.exists(mod_info_path):
+                    try:
+                        with open(mod_info_path, 'r', encoding='utf-8') as f:
+                            mod_info = json.load(f)
+                            mod_info['folder_name'] = mod_folder_name
+                            activated_mods.append(mod_info)
+                    except Exception:
+                        activated_mods.append({
+                            'name': mod_folder_name,
+                            'folder_name': mod_folder_name,
+                            'version': '未知',
+                            'author': '未知',
+                        })
+                else:
+                    activated_mods.append({
+                        'name': mod_folder_name,
+                        'folder_name': mod_folder_name,
+                        'version': '未知',
+                        'author': '未知',
+                    })
+
                 for data_folder in Config.DATA_LIST:
                     mod_data_path = os.path.join(mod_path, data_folder)
                     if os.path.exists(mod_data_path):
@@ -217,6 +242,9 @@ class ModManager:
                     if os.path.exists(csv_temp):
                         os.remove(csv_temp)
 
+            # ── 8. 保存激活记录 ──────────────────────────────────────────────
+            self._save_active_mods(activated_mods)
+
             return True, f"成功激活 {activated_count} 个MOD"
         except Exception as e:
             return False, f"激活MOD失败: {e}"
@@ -260,7 +288,7 @@ class ModManager:
             # 如果MOD已激活，从激活列表中移除
             if self.is_mod_active(mod_folder_name):
                 active_mods = self.get_active_mods()
-                active_mods = [m for m in active_mods if m['name'] != mod_folder_name]
+                active_mods = [m for m in active_mods if m['folder_name'] != mod_folder_name]
                 self._save_active_mods(active_mods)
 
             # 删除MOD文件夹
